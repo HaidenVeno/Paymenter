@@ -77,7 +77,11 @@ class RoleResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return $record->id !== 1;
+        // The seeded "admin" role must never be editable, even by users who
+        // otherwise hold admin.roles.update, so it can't be locked out or
+        // demoted from the panel. Every other role still goes through the
+        // normal policy-backed check (RolePolicy::update / admin.roles.update).
+        return $record->id !== 1 && parent::canEdit($record);
     }
 
     public static function getPages(): array
