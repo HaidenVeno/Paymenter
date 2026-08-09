@@ -6,6 +6,8 @@ use App\Helpers\NotificationHelper;
 use App\Livewire\ComponentWithProperties;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class Account extends ComponentWithProperties
 {
@@ -14,6 +16,8 @@ class Account extends ComponentWithProperties
     public string $last_name = '';
 
     public string $email = '';
+
+    public string $current_password = '';
 
     public function mount()
     {
@@ -32,6 +36,8 @@ class Account extends ComponentWithProperties
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
+            // Changing the email address is a sensitive operation, so require the current password
+            'current_password' => [Rule::requiredIf(fn () => $this->email !== Auth::user()->email), 'string'],
         ], $this->getRulesForProperties());
     }
 
@@ -46,6 +52,14 @@ class Account extends ComponentWithProperties
 
         /** @var User $user */
         $user = Auth::user();
+
+        // Re-authenticate before the email address may be changed
+        if ($this->email !== $user->email && !Hash::check($this->current_password, $user->password)) {
+            return $this->notify(__('account.notifications.password_incorrect'), 'error');
+        }
+
+        unset($validatedData['current_password']);
+
         $user->update($validatedData);
 
         // If email was changed, we should mark it as unverified and send a new verification email
@@ -58,6 +72,8 @@ class Account extends ComponentWithProperties
         if (array_key_exists('properties', $validatedData)) {
             $this->updateProperties($user, $validatedData['properties']);
         }
+
+        $this->reset('current_password');
 
         $this->notify(__('Account updated successfully.'));
     }

@@ -50,15 +50,28 @@
             <h5 class="text-lg font-bold pb-3">{{ __('account.two_factor_authentication') }}</h5>
             @if ($twoFactorEnabled)
             <p class="text-sm text-primary-100">{{ __('account.two_factor_authentication_enabled') }}</p>
-            <x-button.primary class="w-full mt-4" x-on:click="$store.confirmation.confirm({
-                                title: '{{ __('account.two_factor_authentication_disable') }}',
-                                message: '{{ __('account.two_factor_authentication_disable_description') }}',
-                                confirmText: '{{ __('account.confirm') }}',
-                                cancelText: '{{ __('account.cancel') }}',
-                                callback: () => $wire.disableTwoFactor()
-                            })">
+            <x-button.primary wire:click="disableTwoFactor" class="w-full mt-4">
                 {{ __('account.two_factor_authentication_disable') }}
             </x-button.primary>
+            @if ($showDisableTwoFactor)
+            <x-modal :title="__('account.two_factor_authentication_disable')" open="true">
+                <p class="text-primary-100">{{ __('account.two_factor_authentication_disable_description') }}</p>
+                <form wire:submit.prevent="disableTwoFactor">
+                    <x-form.input divClass="mt-8" name="twoFactorPassword" type="password"
+                        :label="__('account.input.current_password')"
+                        :placeholder="__('account.input.current_password_placeholder')"
+                        wire:model="twoFactorPassword" required />
+                    <x-button.primary class="w-full mt-4" type="submit">
+                        {{ __('account.two_factor_authentication_disable') }}
+                    </x-button.primary>
+                </form>
+                <x-slot name="closeTrigger">
+                    <button @click="document.location.reload()" class="text-primary-100">
+                        <x-ri-close-fill class="size-6" />
+                    </button>
+                </x-slot>
+            </x-modal>
+            @endif
             @else
             <p class="text-sm text-primary-100">{{ __('account.two_factor_authentication_description') }}</p>
             <x-button.primary wire:click="enableTwoFactor" class="w-full mt-4">

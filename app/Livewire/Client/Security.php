@@ -27,7 +27,12 @@ class Security extends Component
     #[Locked]
     public $showEnableTwoFactor = false;
 
+    #[Locked]
+    public $showDisableTwoFactor = false;
+
     public string $twoFactorCode = '';
+
+    public string $twoFactorPassword = '';
 
     public function mount()
     {
@@ -99,6 +104,20 @@ class Security extends Component
 
     public function disableTwoFactor()
     {
+        if (!$this->showDisableTwoFactor) {
+            $this->showDisableTwoFactor = true;
+
+            return;
+        }
+
+        $this->validate([
+            'twoFactorPassword' => 'required|string',
+        ]);
+
+        if (!Hash::check($this->twoFactorPassword, Auth::user()->password)) {
+            return $this->notify(__('account.notifications.password_incorrect'), 'error');
+        }
+
         Auth::user()->update([
             'tfa_secret' => null,
         ]);
@@ -106,6 +125,9 @@ class Security extends Component
         $this->notify(__('account.notifications.two_factor_disabled'));
 
         $this->twoFactorEnabled = false;
+        $this->showDisableTwoFactor = false;
+
+        $this->reset('twoFactorPassword');
     }
 
     public function logoutSession(UserSession $session)
