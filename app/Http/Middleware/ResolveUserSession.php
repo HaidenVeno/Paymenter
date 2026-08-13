@@ -26,7 +26,13 @@ class ResolveUserSession
             $token = UserSession::findValid($session->get('user_session'));
         }
 
-        if (!$token) {
+        if (!$token && !$this->isAdminRequest($request)) {
+            // The long-lived paymenter_remember cookie is a convenience for the
+            // customer frontend only. Honouring it for the admin panel was a
+            // full MFA bypass: a bare paymenter_remember cookie (no session, no
+            // password, no 2FA) yielded HTTP 200 on the admin dashboard. Admin
+            // access requires a real interactive session, so the remember-cookie
+            // fallback is never consulted for /admin routes. (Lab 5 s3.8)
             $id = Cookie::get('paymenter_remember');
 
             if ($id) {
@@ -58,6 +64,12 @@ class ResolveUserSession
         $this->garbageCollection();
 
         return $next($request);
+    }
+
+    private function isAdminRequest(Request $request): bool
+    {
+        // Matches the Filament admin panel path (AdminPanelProvider::panel()->path('admin')).
+        return $request->is('admin', 'admin/*');
     }
 
     private function garbageCollection(): void

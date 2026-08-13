@@ -77,7 +77,12 @@ class RoleResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return $record->id !== 1;
+        // The seeded super-admin role (id 1) is never editable through the UI.
+        // Everything else must still pass RolePolicy::update() — a hard-coded
+        // `id !== 1` alone let any staff account that could merely *view* roles
+        // reach the edit form and, via a crafted Livewire payload, grant its
+        // own role wildcard permissions (a full self-escalation to admin).
+        return $record->id !== 1 && parent::canEdit($record);
     }
 
     public static function getPages(): array
